@@ -90,7 +90,7 @@ M.win_config_by_mode = {
 
 function M.create_buf()
 	local buf = vim.api.nvim_create_buf(false, true)
-	vim.api.nvim_buf_set_name(buf, "Dockyard")
+	pcall(vim.api.nvim_buf_set_name, buf, "Dockyard")
 	vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
 	vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
 	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = buf })
@@ -101,7 +101,7 @@ end
 
 function M.create_footer_buf(name)
 	local buf = vim.api.nvim_create_buf(false, true)
-	vim.api.nvim_buf_set_name(buf, name or "DockyardFooter")
+	pcall(vim.api.nvim_buf_set_name, buf, name or "DockyardFooter")
 	vim.api.nvim_set_option_value("buflisted", false, { buf = buf })
 	vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
 	vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
@@ -133,7 +133,7 @@ function M.apply_win_config(win, mode)
 	vim.api.nvim_set_option_value("wrap", false, { win = win })
 	vim.api.nvim_set_option_value("cursorline", true, { win = win })
 
-	if mode == "full" then
+	if mode == "full" or mode == "tab" or mode == "current" or mode == "split" or mode == "vsplit" then
 		vim.api.nvim_set_option_value(
 			"winhighlight",
 			"Normal:Normal,NormalFloat:Normal,FloatBorder:FloatBorder,CursorLine:CursorLine",
