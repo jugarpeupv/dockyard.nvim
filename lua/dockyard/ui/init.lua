@@ -1,6 +1,6 @@
 local M = {}
 local state = require("dockyard.ui.state")
-local footer = require("dockyard.ui.components.footer")
+local statusline = require("dockyard.ui.statusline")
 local keymaps = require("dockyard.ui.keymaps")
 local ui_utils = require("dockyard.ui.utils")
 local config = require("dockyard.config")
@@ -101,8 +101,8 @@ local function setup_active_view()
 				vim.notify(msg, vim.log.levels.ERROR)
 			end
 
-			if state.footer_win_id ~= nil and vim.api.nvim_win_is_valid(state.footer_win_id) then
-				footer.notify(level or "info", msg)
+			if M.is_open() then
+				statusline.notify(level or "info", msg)
 			end
 		end)
 	end
@@ -116,6 +116,7 @@ local function open_with(mode, win_config_fn, mods)
 
 	state.prev_win = vim.api.nvim_get_current_win()
 	state.mode = mode
+	statusline.reset()
 
 	if state.buf_id == nil or not vim.api.nvim_buf_is_valid(state.buf_id) then
 		state.buf_id = ui_utils.create_buf()
@@ -191,6 +192,19 @@ local function open_with(mode, win_config_fn, mods)
 	end
 
 	ui_utils.apply_win_config(state.win_id, mode)
+	statusline.attach(state.win_id)
+	local attached_win = state.win_id
+	vim.api.nvim_create_autocmd("WinClosed", {
+		pattern = tostring(attached_win),
+		once = true,
+		callback = function()
+			vim.schedule(function()
+				if state.win_id == attached_win and not vim.api.nvim_win_is_valid(attached_win) then
+					statusline.reset()
+				end
+			end)
+		end,
+	})
 	keymaps.register_global(state.buf_id, {
 		close = M.close,
 		refresh = M.refresh,
@@ -206,6 +220,7 @@ local function open_with(mode, win_config_fn, mods)
 		{ name = "DockyardFloat", desc = "Open Dockyard floating UI" },
 		{ name = "DockyardBuild", desc = "Build Docker image from current Dockerfile" },
 		{ name = "DockyardRun", desc = "Run Docker Compose services" },
+		{ name = "DockyardFiles", desc = "Browse a container's filesystem" },
 	}, { buffer = state.buf_id, index = 999 })
 
 	return state.win_id
@@ -379,6 +394,7 @@ end
 
 M.close = function()
 	if not M.is_open() then
+		statusline.reset()
 		return
 	end
 
