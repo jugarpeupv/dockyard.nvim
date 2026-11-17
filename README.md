@@ -82,6 +82,13 @@ require("dockyard").setup({
     -- Available views: "containers", "compose", "images", "networks", "volumes"
     -- "compose" shows containers grouped by Docker Compose project
     views = { "containers", "images", "networks", "volumes" },
+    -- How a bare `:Dockyard` opens (default: "current")
+    --   "current" = replace the current buffer (like :edit)
+    --   "split"   = horizontal split   (like :split)
+    --   "vsplit"  = vertical split     (like :vsplit)
+    --   "tab"     = new tabpage        (like :tabnew)
+    --   "float"   = centered floating window
+    open_strategy = "current",
   },
   loglens = {
     containers = {
@@ -208,11 +215,26 @@ Each rule supports:
 
 ## Commands
 
-- `:Dockyard` - open fullscreen UI
-- `:DockyardFloat` - open floating UI
+- `:Dockyard [strategy]` - open the UI. Without an argument it uses `display.open_strategy` (default `"current"`, i.e. it replaces the current buffer). Explicit strategies:
+  - `:Dockyard current` - replace the current buffer (like `:edit`); closing restores the previous buffer
+  - `:Dockyard split` / `:Dockyard horizontal` - horizontal split
+  - `:Dockyard vsplit` / `:Dockyard vertical` - vertical split
+  - `:Dockyard tab` / `:Dockyard full` - new tabpage
+  - `:Dockyard float` - centered floating window
+- `:DockyardFloat` - deprecated alias for `:Dockyard float`
+- `:DockyardFull` - deprecated alias for `:Dockyard tab`
 - `:DockyardBuild` - build a Docker image from the nearest `Dockerfile`. Tags the image after the parent directory name.
 - `:DockyardRun` - runs Docker Compose services (`docker compose up -d --force-recreate`). SUpports visual selection.
 - `:DockyardFiles <container> [path]` - browse a container's filesystem at `path` (defaults to `/`).
+
+Vim command modifiers are honored too, so all of these work:
+
+```vim
+:vertical Dockyard      " vsplit
+:horizontal Dockyard    " split
+:tab Dockyard           " new tab
+:aboveleft Dockyard     " split above
+```
 
 ## Keymaps
 

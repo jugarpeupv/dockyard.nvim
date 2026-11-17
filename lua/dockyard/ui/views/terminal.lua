@@ -19,6 +19,31 @@ local function is_valid_win(win)
 	return win ~= nil and vim.api.nvim_win_is_valid(win)
 end
 
+local function mark_listed(buf)
+	if buf ~= nil and vim.api.nvim_buf_is_valid(buf) then
+		vim.api.nvim_set_option_value("buflisted", true, { buf = buf })
+	end
+end
+
+---Build a recognizable terminal buffer name from the container name.
+---@param label string|nil
+---@param suffix string|nil
+---@return string
+local function term_buf_name(label, suffix)
+	local base = (label ~= nil and label ~= "") and label or "dockyard"
+	if suffix ~= nil and suffix ~= "" then
+		return string.format("term://%s/%s", base, suffix)
+	end
+	return "term://" .. base
+end
+
+local function rename_term_buf(buf, label, suffix)
+	if buf == nil or not vim.api.nvim_buf_is_valid(buf) then
+		return
+	end
+	pcall(vim.api.nvim_buf_set_name, buf, term_buf_name(label, suffix))
+end
+
 local function focus_term_if_open(term, source_win)
 	if term == nil then
 		return false
@@ -33,7 +58,7 @@ local function focus_term_if_open(term, source_win)
 	return true
 end
 
-local function open_panel_terminal(Terminal, container_id, shell, source_win)
+local function open_panel_terminal(Terminal, container_id, shell, source_win, label)
 	if float_session ~= nil and float_session.container_id ~= container_id then
 		pcall(function()
 			float_session.term:close()
@@ -47,13 +72,16 @@ local function open_panel_terminal(Terminal, container_id, shell, source_win)
 			direction = "float",
 			hidden = true,
 			close_on_exit = true,
+			display_name = label,
 			float_opts = {
 				border = "curved",
 				zindex = 260,
 				width = math.floor(vim.o.columns * 0.7),
 				height = math.floor(vim.o.lines * 0.5),
 			},
-			on_open = function()
+			on_open = function(t)
+				mark_listed(t and t.bufnr)
+				rename_term_buf(t and t.bufnr, label, "float")
 				vim.cmd("startinsert")
 			end,
 			on_exit = function(t)
@@ -95,7 +123,7 @@ local function open_panel_terminal(Terminal, container_id, shell, source_win)
 	return true
 end
 
-local function open_full_terminal(Terminal, container_id, shell, target_win, source_win)
+local function open_full_terminal(Terminal, container_id, shell, target_win, source_win, label)
 	local session = toggleterm_sessions[container_id]
 	if session == nil then
 		local ok_new, new_session = pcall(Terminal.new, Terminal, {
@@ -104,7 +132,10 @@ local function open_full_terminal(Terminal, container_id, shell, target_win, sou
 			hidden = true,
 			close_on_exit = true,
 			size = 15,
-			on_open = function()
+			display_name = label,
+			on_open = function(t)
+				mark_listed(t and t.bufnr)
+				rename_term_buf(t and t.bufnr, label)
 				vim.cmd("startinsert")
 			end,
 			on_exit = function(t)
@@ -160,20 +191,21 @@ local function open_with_toggleterm(container_id, shell, ctx)
 	local mode = (ctx and ctx.mode) or "panel"
 	local target_win = ctx and ctx.win
 	local source_win = is_valid_win(target_win) and target_win or vim.api.nvim_get_current_win()
+	local label = (ctx and ctx.name) or container_id
 
 	if mode == "panel" then
-		return open_panel_terminal(Terminal, container_id, shell, source_win)
+		return open_panel_terminal(Terminal, container_id, shell, source_win, label)
 	end
 
 	-- For all other modes (full/tab/split/vsplit/current/float alias) use a
 	-- horizontal split. This keeps T working no matter how Dockyard was opened.
-	return open_full_terminal(Terminal, container_id, shell, target_win, source_win)
+	return open_full_terminal(Terminal, container_id, shell, target_win, source_win, label)
 end
 
 -- ----------------------------
 -- Native terminal backend (fallback when toggleterm is absent)
 -- ----------------------------
-local function open_native_float(container_id, shell)
+local function open_native_float(container_id, shell, label)
 	if native_float ~= nil and native_float.container_id ~= container_id then
 		if is_valid_win(native_float.win) then
 			pcall(vim.api.nvim_win_close, native_float.win, true)
@@ -191,9 +223,9 @@ local function open_native_float(container_id, shell)
 	end
 
 	local buf = vim.api.nvim_create_buf(false, true)
-	pcall(vim.api.nvim_buf_set_name, buf, "dockyard-term://" .. container_id .. "/float")
 	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = buf })
 	vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
+	mark_listed(buf)
 
 	local width = math.floor(vim.o.columns * 0.7)
 	local height = math.floor(vim.o.lines * 0.5)
@@ -234,12 +266,13 @@ local function open_native_float(container_id, shell)
 		vim.api.nvim_win_set_buf(win, buf)
 		vim.fn.termopen(cmd)
 	end
+	rename_term_buf(buf, label, "float")
 	vim.cmd("startinsert")
 	native_float = { container_id = container_id, buf = buf, win = win }
 	return true
 end
 
-local function open_native_split(container_id, shell, target_win)
+local function open_native_split(container_id, shell, target_win, label)
 	local sess = native_sessions[container_id]
 	if sess ~= nil and is_valid_win(sess.win) and sess.buf ~= nil and vim.api.nvim_buf_is_valid(sess.buf) then
 		vim.api.nvim_set_current_win(sess.win)
@@ -253,10 +286,10 @@ local function open_native_split(container_id, shell, target_win)
 	vim.cmd("15split")
 	local win = vim.api.nvim_get_current_win()
 	local buf = vim.api.nvim_create_buf(false, true)
-	pcall(vim.api.nvim_buf_set_name, buf, "dockyard-term://" .. container_id)
 	vim.api.nvim_win_set_buf(win, buf)
 	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = buf })
 	vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
+	mark_listed(buf)
 
 	local cmd = build_exec_cmd(container_id, shell)
 	local ok = pcall(vim.fn.termopen, cmd, {
@@ -277,6 +310,7 @@ local function open_native_split(container_id, shell, target_win)
 	if not ok then
 		vim.fn.termopen(cmd)
 	end
+	rename_term_buf(buf, label)
 	vim.cmd("startinsert")
 	native_sessions[container_id] = { buf = buf, win = win }
 	return true
@@ -285,13 +319,14 @@ end
 local function open_with_native(container_id, shell, ctx)
 	local mode = (ctx and ctx.mode) or "panel"
 	local target_win = ctx and ctx.win
+	local label = (ctx and ctx.name) or container_id
 	-- Mirror toggleterm's mode split: panel -> float, otherwise -> split.
 	-- For all non-panel modes (full/tab/split/vsplit/current) a horizontal split is the
 	-- most predictable native fallback and matches toggleterm's full behaviour.
 	if mode == "panel" then
-		return open_native_float(container_id, shell)
+		return open_native_float(container_id, shell, label)
 	end
-	return open_native_split(container_id, shell, target_win)
+	return open_native_split(container_id, shell, target_win, label)
 end
 
 function M.open(container_id, shell, ctx)

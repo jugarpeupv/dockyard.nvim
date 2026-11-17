@@ -216,8 +216,8 @@ local function open_with(mode, win_config_fn, mods)
 	})
 
 	require("dockyard.ui.popups.help").register_command("Commands", {
-		{ name = "Dockyard", desc = "Open Dockyard UI" },
-		{ name = "DockyardFloat", desc = "Open Dockyard floating UI" },
+		{ name = "Dockyard [strategy]", desc = "Open UI: current|split|vsplit|tab|full|float" },
+		{ name = "DockyardFloat", desc = "Open Dockyard floating UI (alias: :Dockyard float)" },
 		{ name = "DockyardBuild", desc = "Build Docker image from current Dockerfile" },
 		{ name = "DockyardRun", desc = "Run Docker Compose services" },
 		{ name = "DockyardFiles", desc = "Browse a container's filesystem" },
@@ -357,7 +357,7 @@ M.open_float = M.open
 --- @param strategy DockyardOpenStrategy|nil Explicit arg or nil to use config.mods
 --- @param mods string|nil Vim command modifiers (opts.mods)
 M.open_with_strategy = function(strategy, mods)
-	local s = strategy or config.options.display.open_strategy or "tab"
+	local s = strategy or config.options.display.open_strategy or "current"
 	-- Normalize
 	s = tostring(s):lower()
 	if s == "panel" or s == "floating" then

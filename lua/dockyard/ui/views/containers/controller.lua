@@ -122,6 +122,7 @@ function M.open_terminal(item)
 	require("dockyard.ui.views.terminal").open(item.id, "sh", {
 		mode = ui_state.mode,
 		win = ui_state.win_id,
+		name = item.name,
 	})
 end
 

@@ -206,6 +206,7 @@ function M.open_file(container, path)
 			vim.bo[buf].buftype = "acwrite"
 			vim.bo[buf].bufhidden = "wipe"
 			vim.bo[buf].swapfile = false
+			vim.bo[buf].buflisted = true
 
 			vim.api.nvim_create_autocmd("BufWriteCmd", {
 				buffer = buf,
@@ -376,7 +377,7 @@ function M.open(container, path, opts)
 	opts = opts or {}
 	path = core.normalize(path)
 
-	local name = ("dockyard://%s"):format(container)
+	local name = ("dockyard://%s/dockyard-files"):format(container)
 	local buf = vim.fn.bufnr(name)
 	if buf == -1 then
 		buf = vim.api.nvim_create_buf(false, true)
@@ -384,6 +385,7 @@ function M.open(container, path, opts)
 		vim.bo[buf].buftype = "nofile"
 		vim.bo[buf].bufhidden = "hide"
 		vim.bo[buf].swapfile = false
+		vim.bo[buf].buflisted = true
 		vim.bo[buf].filetype = "dockyard-files"
 		attach_keymaps(buf)
 	end

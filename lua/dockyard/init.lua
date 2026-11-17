@@ -5,6 +5,7 @@ function M.setup(opts)
 	local config = require("dockyard.config")
 	config.setup(opts)
 
+	require("dockyard.core.buffers").setup()
 	require("dockyard.ui.highlights").setup()
 end
 

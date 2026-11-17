@@ -94,6 +94,7 @@ function M.create_buf()
 	vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
 	vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
 	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = buf })
+	vim.api.nvim_set_option_value("buflisted", true, { buf = buf })
 	vim.api.nvim_set_option_value("filetype", "dockyard", { buf = buf })
 	vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
 	return buf

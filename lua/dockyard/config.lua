@@ -49,10 +49,10 @@
 
 --- @alias DockyardOpenStrategy "current"|"split"|"vsplit"|"tab"|"float"
 --- How :Dockyard opens when no explicit arg/modifier is given.
----  "current" = replace current window (like :edit)
----  "split"   = horizontal split (like :split)
+---  "current" = replace current window (like :edit) — default
+---  "split"   = horizontal split (like :split / :horizontal split)
 ---  "vsplit"  = vertical split (like :vsplit / :vertical split)
----  "tab"     = new tabpage (like :tabnew) — default, preserves old behavior
+---  "tab"     = new tabpage (like :tabnew)
 ---  "float"   = centered floating window (like :DockyardFloat)
 
 --- @class DisplayConfig
@@ -70,7 +70,7 @@ local M = {}
 M.options = {
 	display = {
 		views = { "containers", "images", "networks", "volumes" },
-		open_strategy = "tab",
+		open_strategy = "current",
 	},
 	loglens = {
 		containers = {},
@@ -121,7 +121,7 @@ M.options = {
 	},
 }
 
-local _dockyard_strategies = { "current", "edit", "split", "vsplit", "tab", "float" }
+local _dockyard_strategies = { "current", "edit", "split", "vsplit", "tab", "full", "float" }
 
 local function normalize_strategy(val)
 	if not val or val == "" then
@@ -137,7 +137,7 @@ local function normalize_strategy(val)
 	if val == "vsplit" or val == "vertical" or val == "v_split" then
 		return "vsplit"
 	end
-	if val == "tab" or val == "tabnew" or val == "tabe" then
+	if val == "tab" or val == "tabnew" or val == "tabe" or val == "full" or val == "fullscreen" then
 		return "tab"
 	end
 	if val == "float" or val == "panel" or val == "floating" then
@@ -173,11 +173,11 @@ local function resolve_strategy(arg, mods)
 			return "split"
 		end
 	end
-	return M.options.display.open_strategy or "tab"
+	return M.options.display.open_strategy or "current"
 end
 
 local function dockyard_complete(arg_lead, _cmd_line, _cursor_pos)
-	local strategies = { "current", "edit", "split", "vsplit", "tab", "float" }
+	local strategies = { "current", "edit", "split", "vsplit", "tab", "full", "float" }
 	if not arg_lead or arg_lead == "" then
 		return strategies
 	end
