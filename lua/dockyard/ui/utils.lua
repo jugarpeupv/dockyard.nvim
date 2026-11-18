@@ -90,7 +90,7 @@ M.win_config_by_mode = {
 
 function M.create_buf()
 	local buf = vim.api.nvim_create_buf(false, true)
-	pcall(vim.api.nvim_buf_set_name, buf, "Dockyard")
+	pcall(vim.api.nvim_buf_set_name, buf, "dockyard://dashboard")
 	vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
 	vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
 	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = buf })

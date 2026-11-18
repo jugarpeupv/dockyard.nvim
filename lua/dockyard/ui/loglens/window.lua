@@ -2,45 +2,64 @@ local M = {}
 
 local statusline = require("dockyard.ui.statusline")
 
-local LOGLENS_BUFFER_NAME = "dockyard://loglens"
-
 ---@param state LogLensState
----@return number buf_id The buffer ID
-M.create_buffer = function(state)
-	if state.has_valid_buffer() then
-		return state.buf_id
+---@return string
+local function buffer_name(state)
+	local label = state.container_name
+	if label == nil or label == "" then
+		label = state.container and state.container.id or "unknown"
 	end
+	return ("dockyard://%s/dockyard-logs"):format(label)
+end
 
-	local existing = vim.fn.bufnr(LOGLENS_BUFFER_NAME)
-	if existing > 0 and vim.api.nvim_buf_is_valid(existing) then
-		state.buf_id = existing
-		return existing
-	end
-
-	local buf = vim.api.nvim_create_buf(false, true)
-	vim.api.nvim_buf_set_name(buf, LOGLENS_BUFFER_NAME)
-
+---Apply LogLens buffer options. Needed both for new buffers and for buffers
+---that were unloaded (e.g. by :bdelete), which resets buffer-local options.
+---@param buf integer
+local function configure_buffer(buf)
 	vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
 	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = buf })
 	vim.api.nvim_set_option_value("buflisted", true, { buf = buf })
 	vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
 	vim.api.nvim_set_option_value("filetype", "dockyard-logs", { buf = buf })
 	vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+end
+
+---@param state LogLensState
+---@return number buf_id The buffer ID
+M.create_buffer = function(state)
+	if state.has_valid_buffer() then
+		configure_buffer(state.buf_id)
+		return state.buf_id
+	end
+
+	local name = buffer_name(state)
+	local existing = vim.fn.bufnr(name)
+	if existing > 0 and vim.api.nvim_buf_is_valid(existing) then
+		state.buf_id = existing
+		configure_buffer(existing)
+		return existing
+	end
+
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_buf_set_name(buf, name)
+	configure_buffer(buf)
 
 	state.buf_id = buf
 
 	return buf
 end
 
----Create a bottom split in DockyardFull window and attach buffer.
+---Create a bottom split in the Dockyard window and attach buffer.
+---Falls back to the current window when the Dockyard UI is no longer open
+---(e.g. the dashboard buffer was reopened from the buffer list).
 ---@param buf number
 ---@param ui_state UIState
 ---@return number|nil win_id
 M.create_window_fullscreen = function(buf, ui_state)
 	local target_win = ui_state.win_id
 	if not (target_win and vim.api.nvim_win_is_valid(target_win)) then
-		vim.notify("LogLens: Dockyard window not available", vim.log.levels.ERROR)
-		return nil
+		target_win = vim.api.nvim_get_current_win()
+		ui_state.win_id = target_win
 	end
 
 	local win

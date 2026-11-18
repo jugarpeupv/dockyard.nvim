@@ -31,59 +31,64 @@
 ---@field is_open fun(): boolean
 ---@field has_valid_buffer fun(): boolean
 
----@type LogLensStateData
-local M = {
-	win_id = nil,
-	buf_id = nil,
-	container = nil,
-	container_name = nil,
+local M = {}
 
-	follow = true,
-	raw = false,
-	filter = nil,
+---@return LogLensState
+function M.new()
+	---@type LogLensState
+	local state = {
+		win_id = nil,
+		buf_id = nil,
+		container = nil,
+		container_name = nil,
 
-	entries = {},
-	line_map = nil,
+		follow = true,
+		raw = false,
+		filter = nil,
 
-	job_ids = {},
-	active_source = nil,
-	sources = {},
-	active_source_idx = 0,
-	max_lines = 2000,
-	parser_sessions = {},
-}
+		entries = {},
+		line_map = nil,
 
----@cast M LogLensState
+		job_ids = {},
+		active_source = nil,
+		sources = {},
+		active_source_idx = 0,
+		max_lines = 2000,
+		parser_sessions = {},
+	}
 
-function M.reset()
-	M.win_id = nil
-	M.buf_id = nil
-	M.container = nil
-	M.container_name = nil
+	function state.reset()
+		state.win_id = nil
+		state.buf_id = nil
+		state.container = nil
+		state.container_name = nil
 
-	M.follow = true
-	M.raw = false
-	M.filter = nil
+		state.follow = true
+		state.raw = false
+		state.filter = nil
 
-	M.entries = {}
-	M.line_map = nil
+		state.entries = {}
+		state.line_map = nil
 
-	M.job_ids = {}
-	M.active_source = nil
-	M.sources = {}
-	M.active_source_idx = 0
-	M.max_lines = 2000
-	M.parser_sessions = {}
-end
+		state.job_ids = {}
+		state.active_source = nil
+		state.sources = {}
+		state.active_source_idx = 0
+		state.max_lines = 2000
+		state.parser_sessions = {}
+	end
 
----@return boolean
-function M.is_open()
-	return M.win_id ~= nil and vim.api.nvim_win_is_valid(M.win_id)
-end
+	---@return boolean
+	function state.is_open()
+		return state.win_id ~= nil and vim.api.nvim_win_is_valid(state.win_id)
+	end
 
----@return boolean
-function M.has_valid_buffer()
-	return M.buf_id ~= nil and vim.api.nvim_buf_is_valid(M.buf_id)
+	---@return boolean
+	function state.has_valid_buffer()
+		return state.buf_id ~= nil and vim.api.nvim_buf_is_valid(state.buf_id)
+	end
+
+	return state
 end
 
 return M
